@@ -1,11 +1,12 @@
 <template>
-  <view class="user-container">
-        <view class="user-info-bar">
-            <image class="user-avatar" src="/static/images/default-user.png" alt="用户头像" />
-            <text class="user-name">login</text>
-        </view>
-    </view>
+
   <view class="login-container">
+	  <view class="user-container">
+	    <view class="user-info-bar">
+	      <image class="user-avatar" src="/static/images/default-user.png" alt="用户头像" />
+	      <text class="user-name">login</text>
+	    </view>
+	  </view>
     <view class="login-card">
       <text class="login-title">登录</text>
       <view class="login-form">
@@ -41,94 +42,91 @@
   </view>
 </template>
 
-<script setup>
+<script>
 import { ref } from 'vue'
 import { http } from '../../utils/http.js'
 
-const username = ref('')
-const password = ref('')
-const loading = ref(false)
-const error = ref('')
+export default {
+  setup() {
+    const username = ref('')
+    const password = ref('')
+    const loading = ref(false)
+    const error = ref('')
 
-const handleLogin = async () => {
-  if (!username.value || !password.value) {
-    error.value = '请填写完整的登录信息'
-    return
-  }
-
-  loading.value = true
-  error.value = ''
-
-  try {
-    console.log('开始登录请求...')
-    // 修改：http.login 现在直接返回 ApiResponse 对象，不需要处理 response.data
-    const result = await http.login({
-      username: username.value,
-      password: password.value
-    })
-
-    console.log('登录响应:', result)
-
-    // 修改：result 就是 ApiResponse 对象 { success: true, message: '登录成功', data: {...} }
-    if (result.success) {
-      console.log('登录成功，响应数据：', result.data)
-      
-      // 保存 token 和用户信息
-      if (result.data?.token) {
-        uni.setStorageSync('token', result.data.token)
-        console.log('Token 已保存:', result.data.token)
+    const handleLogin = async () => {
+      if (!username.value || !password.value) {
+        error.value = '请填写完整的登录信息'
+        return
       }
-      if (result.data?.username) {
-        uni.setStorageSync('username', result.data.username)
-        console.log('用户名已保存:', result.data.username)
+
+      loading.value = true
+      error.value = ''
+
+      try {
+        console.log('开始登录请求...')
+        const result = await http.login({
+          username: username.value,
+          password: password.value
+        })
+
+        console.log('登录响应:', result)
+
+        if (result.success) {
+          console.log('登录成功，响应数据：', result.data)
+          
+          if (result.data && result.data.token) {
+            uni.setStorageSync('token', result.data.token)
+            console.log('Token 已保存:', result.data.token)
+          }
+          if (result.data && result.data.username) {
+            uni.setStorageSync('username', result.data.username)
+            console.log('用户名已保存:', result.data.username)
+          }
+          
+          console.log('准备跳转到 todo 页面')
+          uni.navigateTo({
+            url: '../todo/todo'
+          })
+          console.log('跳转命令已执行')
+        } else {
+          console.log('登录失败:', result.message)
+          error.value = result.message || '登录失败'
+        }
+      } catch (err) {
+        console.error('登录请求异常:', err)
+        if (err.message) {
+          error.value = err.message
+        } else if (err.errMsg) {
+          error.value = err.errMsg
+        } else {
+          error.value = '登录失败，请检查网络连接'
+        }
+      } finally {
+        loading.value = false
       }
-      
-      // 登录成功，跳转到待办列表页面
-      console.log('准备跳转到 todo 页面')
+    }
+
+    const goToRegister = () => {
+      console.log('点击了立即注册按钮')
       uni.navigateTo({
-        url: '../todo/todo'
+        url: '../register/register'
       })
-      console.log('跳转命令已执行')
-    } else {
-      console.log('登录失败:', result.message)
-      error.value = result.message || '登录失败'
     }
-  } catch (err) {
-    console.error('登录请求异常:', err)
-    // 修改：错误处理，err 可能是 ApiResponse 对象或网络错误
-    if (err.message) {
-      error.value = err.message
-    } else if (err.errMsg) {
-      error.value = err.errMsg
-    } else {
-      error.value = '登录失败，请检查网络连接'
-    }
-  } finally {
-    loading.value = false
-  }
-}
 
-const goToRegister = () => {
-  console.log('点击了立即注册按钮')
-  
-  // 使用uni-app标准的跳转方式
-  uni.navigateTo({
-    url: '../register/register'
-  })
+    return {
+      username,
+      password,
+      loading,
+      error,
+      handleLogin,
+      goToRegister
+    }
+  }
 }
 </script>
 
 <style scoped>
 .login-container {
-  margin-top: 10px;
-  min-height: 100vh;
-  background-image:
-    url('/static/images/cat-paw.png'),
-    url('/static/images/cat-paw.png');
-  background-size: 80px 80px, 80px 80px;
-  background-position: 0 0, 40px 40px;
-  background-repeat: repeat, repeat;
-  background-color: #FFEEE2;
   font-family: 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif;
 }
 
@@ -239,5 +237,8 @@ const goToRegister = () => {
   .login-title {
     font-size: 20px;
   }
+}
+button{
+	width:249px;
 }
 </style>

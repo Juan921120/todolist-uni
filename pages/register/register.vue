@@ -53,116 +53,127 @@
  </view>
 </template>
 
-<script setup>
+<script>
 import { ref } from 'vue'
 import { http } from '../../utils/http.js'
 
-const username = ref('')
-const password = ref('')
-const confirmPassword = ref('')
-const loading = ref(false)
-const error = ref('')
-const success = ref('')
+export default {
+  name: 'Register',
+  setup() {
+    // 响应式数据
+    const username = ref('')
+    const password = ref('')
+    const confirmPassword = ref('')
+    const loading = ref(false)
+    const error = ref('')
+    const success = ref('')
 
-const handleRegister = async () => {
- // 表单验证
- if (!username.value || !password.value || !confirmPassword.value) {
-   error.value = '请填写完整的注册信息'
-   return
- }
+    // 注册处理函数
+    const handleRegister = async () => {
+      // 表单验证
+      if (!username.value || !password.value || !confirmPassword.value) {
+        error.value = '请填写完整的注册信息'
+        return
+      }
 
- if (password.value !== confirmPassword.value) {
-   error.value = '两次输入的密码不一致'
-   return
- }
+      if (password.value !== confirmPassword.value) {
+        error.value = '两次输入的密码不一致'
+        return
+      }
 
- if (password.value.length < 6) {
-   error.value = '密码长度至少6位'
-   return
- }
+      if (password.value.length < 6) {
+        error.value = '密码长度至少6位'
+        return
+      }
 
- loading.value = true
- error.value = ''
- success.value = ''
+      loading.value = true
+      error.value = ''
+      success.value = ''
 
- try {
-   console.log('开始注册请求...')
-   // 修改：http.register 现在直接返回 ApiResponse 对象
-   const result = await http.register({
-     username: username.value,
-     password: password.value
-   })
+      try {
+        console.log('开始注册请求...')
+        // http.register 现在直接返回 ApiResponse 对象
+        const result = await http.register({
+          username: username.value,
+          password: password.value
+        })
 
-   console.log('注册响应:', result)
+        console.log('注册响应:', result)
 
-   // 修改：result 就是 ApiResponse 对象 { success: true, message: '注册成功', data: {...} }
-   if (result.success) {
-     success.value = result.message || '注册成功！正在跳转...'
-     
-     // 如果注册后直接返回了token，可以选择自动登录
-     if (result.data?.token) {
-       uni.setStorageSync('token', result.data.token)
-       console.log('Token 已保存:', result.data.token)
-       
-       if (result.data?.username) {
-         uni.setStorageSync('username', result.data.username)
-         console.log('用户名已保存:', result.data.username)
-       }
-       
-       // 注册成功后直接跳转到待办页面
-       setTimeout(() => {
-         uni.navigateTo({
-           url: '../todo/todo'
-         })
-       }, 2000)
-     } else {
-       // 没有返回token，3秒后跳转到登录页面
-       setTimeout(() => {
-         uni.navigateTo({
-           url: '../login/login'
-         })
-       }, 3000)
-     }
-   } else {
-     console.log('注册失败:', result.message)
-     error.value = result.message || '注册失败'
-   }
- } catch (err) {
-   console.error('注册请求异常:', err)
-   // 修改：错误处理，err 可能是 ApiResponse 对象或网络错误
-   if (err.message) {
-     error.value = err.message
-   } else if (err.errMsg) {
-     error.value = err.errMsg
-   } else {
-     error.value = '注册失败，请检查网络连接'
-   }
- } finally {
-   loading.value = false
- }
-}
+        // result 就是 ApiResponse 对象 { success: true, message: '注册成功', data: {...} }
+        if (result && result.success) {
+          success.value = result.message || '注册成功！正在跳转...'
+          
+          // 如果注册后直接返回了token，可以选择自动登录
+          if (result.data && result.data.token) {
+            uni.setStorageSync('token', result.data.token)
+            console.log('Token 已保存:', result.data.token)
+            
+            if (result.data && result.data.username) {
+              uni.setStorageSync('username', result.data.username)
+              console.log('用户名已保存:', result.data.username)
+            }
+            
+            // 注册成功后直接跳转到待办页面
+            setTimeout(() => {
+              uni.navigateTo({
+                url: '../todo/todo'
+              })
+            }, 2000)
+          } else {
+            // 没有返回token，3秒后跳转到登录页面
+            setTimeout(() => {
+              uni.navigateTo({
+                url: '../login/login'
+              })
+            }, 3000)
+          }
+        } else {
+          console.log('注册失败:', result && result.message ? result.message : '注册失败')
+          error.value = result && result.message ? result.message : '注册失败'
+        }
+      } catch (err) {
+        console.error('注册请求异常:', err)
+        // 错误处理，err 可能是 ApiResponse 对象或网络错误
+        if (err && err.message) {
+          error.value = err.message
+        } else if (err && err.errMsg) {
+          error.value = err.errMsg
+        } else {
+          error.value = '注册失败，请检查网络连接'
+        }
+      } finally {
+        loading.value = false
+      }
+    }
 
-const goToLogin = () => {
- console.log('点击了立即登录按钮')
- 
- // 使用uni-app标准的跳转方式
- uni.navigateTo({
-   url: '../login/login'
- })
+    // 跳转到登录页面
+    const goToLogin = () => {
+      console.log('点击了立即登录按钮')
+      
+      // 使用uni-app标准的跳转方式
+      uni.navigateTo({
+        url: '../login/login'
+      })
+    }
+
+    // 暴露给模板使用的数据和方法
+    return {
+      username,
+      password,
+      confirmPassword,
+      loading,
+      error,
+      success,
+      handleRegister,
+      goToLogin
+    }
+  }
 }
 </script>
 
 <style scoped>
 .register-container {
- margin-top: 10px;
- min-height: 100vh;
- background-image:
-   url('/static/images/cat-paw.png'),
-   url('/static/images/cat-paw.png');
- background-size: 80px 80px, 80px 80px;
- background-position: 0 0, 40px 40px;
- background-repeat: repeat, repeat;
- background-color: #FFEEE2;
  font-family: 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif;
 }
 
@@ -272,5 +283,8 @@ const goToLogin = () => {
  margin-top: 15px;
  text-align: center;
  border: 1px solid #c8e6c9;
+}
+button{
+	width:249px;
 }
 </style>

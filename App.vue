@@ -20,20 +20,23 @@ html, body {
   margin: 0;
   padding: 0;
 }
-body {
-  background-image: url(/images/cat-paw.png),url(/images/cat-paw.png);
-  background-size: 80px 80px,80px 80px;
-  background-position: 0 0,40px 40px;
-  background-repeat: repeat,repeat;
+html, body, page {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-image: url(/static/images/cat-paw.png), url(/static/images/cat-paw.png);
+  background-size: 80px 80px, 80px 80px;
+  background-position: 0 0, 40px 40px;
+  background-repeat: repeat, repeat;
   background-color: #ffe7d6;
 }
-.user-info-bar {
-  margin: 0 auto;
-  padding-top: 20px;
-  width: 120px;
-  display: flex;
-}
 
+ .user-info-bar{
+		width: 30%;
+		padding: 20rpx;
+		margin: 0 auto;
+		display: flex;
+	}
 .user-avatar {
 
   width: 42px;

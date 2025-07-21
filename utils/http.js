@@ -3,18 +3,16 @@ class HttpUtil {
   constructor() {
     // 配置
     this.config = {
-      // 根据环境设置baseUrl
-      baseUrl: process.env.NODE_ENV === 'production' 
-        ? 'https://your-production-api.com' 
-        : '',  // 开发环境使用代理
+      // 根据运行平台和环境设置baseUrl
+      baseUrl: this.getBaseUrl(),
       timeout: 10000,
-      
+
       // API接口路径
       endpoints: {
         // 认证相关
         login: '/auth/login',
         register: '/auth/register',
-        
+
         // 任务相关
         taskAll: '/task/all',
         taskPending: '/task/pending',
@@ -25,6 +23,23 @@ class HttpUtil {
         taskCompleteBatch: '/task/complete/batch',
       }
     }
+
+    console.log('HTTP工具初始化，当前baseUrl:', this.config.baseUrl)
+  }
+
+ 
+  getBaseUrl() {
+    // 生产环境
+    if (process.env.NODE_ENV === 'production') {
+      return 'https://your-production-api.com'  // 替换为你的生产环境API地址
+    }
+  // H5环境使用代理，添加 /api 前缀匹配manifest.json代理配置     
+  //  经过 pathRewrite 后，/api 会被移除，最终转发到正确的后端路径   
+  // return '/api'    
+   
+  // HBuilderX 内置浏览器没有跨域限制，直接删掉代理配置
+    // 开发环境 - 直接请求后端
+    return 'http://localhost:8080'
   }
 
   // 判断是否为白名单接口（不需要token）
@@ -39,10 +54,10 @@ class HttpUtil {
     uni.showLoading({
       title: '加载中...'
     })
-    
+
     // 从缓存中获取token
     const token = uni.getStorageSync('token')
-    
+
     // 如果有token且不是白名单接口，则添加Authorization头
     if (token && !this.isWhiteList(options.url)) {
       options.header = {
@@ -50,7 +65,7 @@ class HttpUtil {
         'Authorization': `Bearer ${token}`
       }
     }
-    
+
     console.log('请求参数：', options) // 调试日志
     return options
   }
@@ -58,9 +73,9 @@ class HttpUtil {
   // 响应拦截器 - 统一处理 ApiResponse 格式
   responseInterceptor(response) {
     uni.hideLoading()
-    
+
     console.log('响应数据：', response) // 调试日志
-    
+
     // 检查HTTP状态码
     if (response.statusCode !== 200) {
       if (response.statusCode === 401) {
@@ -74,6 +89,13 @@ class HttpUtil {
         uni.reLaunch({
           url: '/pages/login/login'
         })
+      } else if (response.statusCode === 404) {
+        // 404 接口不存在
+        console.error('接口不存在，请检查URL配置:', response)
+        uni.showToast({
+          title: '接口不存在，请检查配置',
+          icon: 'none'
+        })
       } else {
         uni.showToast({
           title: `请求失败 ${response.statusCode}`,
@@ -82,10 +104,10 @@ class HttpUtil {
       }
       return Promise.reject(response)
     }
-    
+
     // 统一处理 ApiResponse 格式的数据
     const { data } = response
-    
+
     // 检查是否是 ApiResponse 格式 { success: boolean, message: string, data: T }
     if (data && typeof data.success === 'boolean') {
       if (!data.success) {
@@ -99,7 +121,7 @@ class HttpUtil {
       // 业务成功，返回 ApiResponse 对象
       return data
     }
-    
+
     // 如果不是标准的 ApiResponse 格式，直接返回原数据
     return data
   }
@@ -136,8 +158,19 @@ class HttpUtil {
         fail: (error) => {
           uni.hideLoading()
           console.error('网络请求失败：', error)
+
+          // 更详细的错误提示
+          let errorMessage = '网络请求失败'
+          if (error.errMsg) {
+            if (error.errMsg.includes('timeout')) {
+              errorMessage = '请求超时，请检查网络'
+            } else if (error.errMsg.includes('fail')) {
+              errorMessage = '网络连接失败，请检查服务器是否启动'
+            }
+          }
+
           uni.showToast({
-            title: '网络请求失败',
+            title: errorMessage,
             icon: 'none'
           })
           reject(error)
@@ -183,7 +216,7 @@ class HttpUtil {
   }
 
   // ========== API方法 ==========
-  
+
   // 认证相关
   login(loginData) {
     return this.post(this.config.endpoints.login, loginData)
