@@ -43,7 +43,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { api } from '../../utils/api.js'
+import { http } from '../../utils/http.js'
 
 const username = ref('')
 const password = ref('')
@@ -61,24 +61,26 @@ const handleLogin = async () => {
 
   try {
     console.log('开始登录请求...')
-    const response = await api.login({
+    // 修改：http.login 现在直接返回 ApiResponse 对象，不需要处理 response.data
+    const result = await http.login({
       username: username.value,
       password: password.value
     })
 
-    console.log('登录响应:', response)
+    console.log('登录响应:', result)
 
-    if (response.statusCode === 200 && response.data.success) {
-      console.log('登录成功，响应数据：', response.data)
+    // 修改：result 就是 ApiResponse 对象 { success: true, message: '登录成功', data: {...} }
+    if (result.success) {
+      console.log('登录成功，响应数据：', result.data)
       
       // 保存 token 和用户信息
-      if (response.data.data?.token) {
-        uni.setStorageSync('token', response.data.data.token)
-        console.log('Token 已保存')
+      if (result.data?.token) {
+        uni.setStorageSync('token', result.data.token)
+        console.log('Token 已保存:', result.data.token)
       }
-      if (response.data.data?.username) {
-        uni.setStorageSync('username', response.data.data.username)
-        console.log('用户名已保存')
+      if (result.data?.username) {
+        uni.setStorageSync('username', result.data.username)
+        console.log('用户名已保存:', result.data.username)
       }
       
       // 登录成功，跳转到待办列表页面
@@ -86,14 +88,21 @@ const handleLogin = async () => {
       uni.navigateTo({
         url: '../todo/todo'
       })
-      console.log('跳转完成')
+      console.log('跳转命令已执行')
     } else {
-      console.log('登录失败，状态码:', response.statusCode)
-      error.value = response.data?.message || '登录失败'
+      console.log('登录失败:', result.message)
+      error.value = result.message || '登录失败'
     }
   } catch (err) {
     console.error('登录请求异常:', err)
-    error.value = err.message || '登录失败，请检查网络连接'
+    // 修改：错误处理，err 可能是 ApiResponse 对象或网络错误
+    if (err.message) {
+      error.value = err.message
+    } else if (err.errMsg) {
+      error.value = err.errMsg
+    } else {
+      error.value = '登录失败，请检查网络连接'
+    }
   } finally {
     loading.value = false
   }
@@ -231,4 +240,4 @@ const goToRegister = () => {
     font-size: 20px;
   }
 }
-</style> 
+</style>
